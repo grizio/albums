@@ -1,5 +1,5 @@
 import { localDB } from "./repository/db/LocalDB"
-import { isAddImageEvent } from "./repository/ProjectEvent"
+import { AddImageEvent, isAddImageEvent, ProjectEvent } from "./repository/ProjectEvent"
 
 type Parameters = {
   projectName: string
@@ -13,6 +13,14 @@ export class ProjectRepository {
   constructor({ projectName, projectKey }: Parameters) {
     this.projectName = projectName
     this.projectKey = projectKey
+
+    const eventSource = new EventSource(`http://localhost:9080/sse/${this.projectName}`)
+    eventSource.onmessage = (event) => {
+      const projectEvent = JSON.parse(event.data) as ProjectEvent
+      if (isAddImageEvent(projectEvent)) {
+        //this.addImage(projectEvent.blob)
+      }
+    }
   }
 
   getAllImages = (): Promise<Array<string>> => localDB.withConnection("projects", tx => {
@@ -23,12 +31,20 @@ export class ProjectRepository {
       .execute()
   })
 
-  addImage = async (blob: string): Promise<void> => localDB.withTransaction("projects", tx => {
-    return tx.getObjectStore("projects")
-      .add({
-        type: "addImage",
-        project: this.projectName,
-        blob
+  addImage = async (blob: string): Promise<void> => {
+    const event: AddImageEvent = {
+      type: "addImage",
+      project: this.projectName,
+      blob
+    }
+    return localDB.withTransaction("projects", tx => {
+      return tx.getObjectStore("projects").add(event)
+    })
+      .then(_ => {
+        fetch(`http://localhost:9080/${this.projectName}`, {
+          method: "POST",
+          body: JSON.stringify(event) //wasm.encrypt(result, "test")
+        })
       })
-  })
+  }
 }

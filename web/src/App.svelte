@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ProjectRepository } from "./projectRepository"
+  //import * as wasm from "album-wasm"
 
   const projectName = location.search.substring("?project=".length)
   const project = new ProjectRepository({ projectName, projectKey: "test" })
@@ -9,13 +10,8 @@
     const file = event.target.files[0]
     const reader = new FileReader()
     reader.onload = (e) => {
-      const result = e.target.result
-      project.addImage(result as string)
-      //outputFile.src = result
-      /*fetch(`http://localhost:9080/${project}`, {
-        method: "POST",
-        body: result
-      })*/
+      const result = e.target.result as string
+      project.addImage(result)
     }
     reader.readAsDataURL(file)
   }
