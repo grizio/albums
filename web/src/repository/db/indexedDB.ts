@@ -1,16 +1,6 @@
 const VERSION = 1
 const DB_NAME = "albums"
 
-export const stores = {
-  projects: {
-    storeName: "projects",
-    indexes: {
-      id: "id",
-      project: "project"
-    }
-  }
-}
-
 let lazyDB: Promise<IDBDatabase> | undefined = undefined
 
 export function getDB(): Promise<IDBDatabase> {
@@ -29,12 +19,7 @@ function upgrade(request: IDBOpenDBRequest, event: IDBVersionChangeEvent): void 
   // @ts-ignore
   const db = event.currentTarget.result as IDBDatabase
   if (event.oldVersion < 1) {
-    db.createObjectStore(
-      stores.projects.storeName,
-      {
-        keyPath: [stores.projects.indexes.id, stores.projects.indexes.project],
-        autoIncrement: true
-      }
-    )
+    const objectStore = db.createObjectStore("projects", { autoIncrement: true })
+    objectStore.createIndex("project", "project")
   }
 }

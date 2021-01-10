@@ -10,25 +10,25 @@ export class ProjectRepository {
   private readonly projectName: string
   private readonly projectKey: string
 
-  constructor({projectName, projectKey}: Parameters) {
+  constructor({ projectName, projectKey }: Parameters) {
     this.projectName = projectName
     this.projectKey = projectKey
   }
 
-  getAllImages = (): Promise<Array<string>> => {
-    return localDB.getObjectStore("projects", "readonly")
+  getAllImages = (): Promise<Array<string>> => localDB.withConnection("projects", tx => {
+    return tx.getObjectStore("projects")
       .queryByIndex("project", this.projectName)
       .is(isAddImageEvent)
       .map(_ => _.blob)
       .execute()
-  }
+  })
 
-  addImage = async (blob: string): Promise<void> => {
-    return localDB.getObjectStore("projects", "readwrite")
+  addImage = async (blob: string): Promise<void> => localDB.withTransaction("projects", tx => {
+    return tx.getObjectStore("projects")
       .add({
         type: "addImage",
         project: this.projectName,
         blob
       })
-  }
+  })
 }
